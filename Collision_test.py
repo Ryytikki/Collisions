@@ -16,10 +16,10 @@ def main():
 	pygame.display.set_caption("Collision test")
 	
 	# Test map, entity map blank till i code the conversion system
-	map_file = ["0000000300", "0010000250", "0020000250", "0040000450", "1000000450"]
+	map_file = ["0000000300", "0010000250", "0020000250", "0040000450", "0060000450","006000001","1000000450"]
 	entity_file = []
 	
-	blackColour = pygame.Color(0,0,0)
+	black_colour = pygame.Color(0,0,0)
 	
 	# define the objects
 	player = Player(1)
@@ -30,12 +30,14 @@ def main():
 	
 	while True:
 		# reset the screen
-		blackColour = pygame.Color(0,0,0)
+		window_surface.fill(black_colour)
 		# Check for collisions
 		map.ground_collision(player)
+		tracer = map.draw_map()
 		# Apply gravity and update the screen
-		player.rect[1] += 15
-		window_surface.blit(player.image, player.rect)
+		window_surface.blit(tracer, (0,0))
+		window_surface.blit(player.image, (player.rect[0] - 112, player.rect[1] - 125))
+		player.rect[1] += 10
 		player.update()
 		pygame.display.update()
 		fpsclock.tick(30)

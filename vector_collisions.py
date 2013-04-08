@@ -70,7 +70,13 @@ class collision_map():
 		elif self.x_coord[self.map_range[1] + 1] + self.location < self.screen_width:
 			self.map_range[1] -= 1
 			self.calc_offset()
-		
+	
+	def draw_map(self):
+		map_image = pygame.Surface((1336,768))
+		for i in range(self.map_range[0], self.map_range[1]):
+			pygame.draw.circle(map_image, (255,255,255), (int(self.x_coord[i]), int(self.y_coord[i])), 5)
+			pygame.draw.line(map_image, (255,255,255), (self.x_coord[i], self.y_coord[i]), (self.x_coord[i+1], self.y_coord[i+1]))
+		return(map_image)
 	
 	def ground_collision(self, target):
 		
@@ -89,15 +95,20 @@ class collision_map():
 		for i in range(self.map_range[0], self.map_range[1]):
 			if target.rect[0] >= self.x_coord[i]:
 				if target.rect[0] < self.x_coord[i+1]:
-					print(i)
 					array_ID = i
 
 		# Calculate the gradient of the vector (dy/dx)
 		gradient = (self.y_coord[array_ID+1] - self.y_coord[array_ID]) / (self.x_coord[array_ID + 1] - self.x_coord[array_ID])
-		# Then use that to calculate the height of the vector where the target is
-		vector_y = gradient * (target.rect[0]- self.x_coord[array_ID]) + self.y_coord[array_ID]
-		# And finally  calculate the displacement, if any is needed
-		if target.rect[1]> vector_y:
-			dy = target.rect[1]- vector_y
-		# This can be applied to the target to move them above the map
-		target.rect[1]-= dy
+		# Added this to stop the player moving past immovable walls
+		if gradient > -3 and gradient < 3:
+			# Use the gradient to calculate the height of the vector where the target is
+			vector_y = gradient * (target.rect[0]- self.x_coord[array_ID]) + self.y_coord[array_ID]	
+			# And finally  calculate the displacement, if any is needed
+			if target.rect[1]> vector_y:
+				dy = target.rect[1]- vector_y
+			# This can be applied to the target to move them above the map
+			target.rect[1]-= dy
+		else:
+			# nudges the player back if they're trying to walk through a wall
+			target.rect[0] = self.x_coord[array_ID] - (target.x_direction * target.speed)
+			self.ground_collision(target)

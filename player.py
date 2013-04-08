@@ -13,7 +13,7 @@ class Player(pygame.sprite.Sprite):
 		
 		self.image = load_image("blob.png")
 		self.rect = self.image.get_rect()
-		self.rect.center = (20.0, 500.0)
+		self.rect.center = (self.rect[0] + 125, self.rect[1] +75)
 	
 		self.x_direction = 0
 		self.speed = 10
@@ -64,4 +64,5 @@ class Player(pygame.sprite.Sprite):
 					else:
 						self.x_direction = 0
 						
-		self.rect[0] += self.speed * self.x_direction			
+		self.rect[0] += self.speed * self.x_direction
+
