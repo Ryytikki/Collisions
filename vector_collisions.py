@@ -10,7 +10,7 @@ from pygame.sprite import *
 # other floating objects you can stand on                     #
 ###############################################################
 
-class collision_map():
+class Collision_map():
 	
 	def __init__(self, map_file, entity_file, screen_width):	
 	
@@ -24,7 +24,7 @@ class collision_map():
 		self.map_range = [0,0]
 		
 		# Current location of the collision map
-		self.location = [0,0]
+		self.location = [0.0,0.0]
 		
 		self.convert_map(map_file)
 		#convert_entities(map_file)
@@ -44,57 +44,65 @@ class collision_map():
 		self.x_coord.append(999999999)
 		self.y_coord.append(999999999)
 		self.map_range[0] = 0
-		self.map_range[1] = i 
+		self.map_range[1] = i-1
 		
-	#	self.calc_offset()
+		self.calc_offset(0)
 		
 		
-	def calc_offset(self):
+	def calc_offset(self, offset):
 		# Calculates the range of vectors that are currently displayed on the screen
 		# You wanna run this every time the position of the player is updated
-		
+
 		# Left hand side
-		# TODO - Correct conditions to not fuck up
-		if self.x_coord[self.map_range[0] + 1] + self.location[0] < 0:
+		# Point moving off of screen
+		if self.x_coord[self.map_range[0]] + offset < 0:
 			self.map_range[0] += 1
 			# itterates until everything is done
-			self.calc_offset()
-		elif self.x_coord[self.map_range[0] - 1] + self.location[0] > 0:
-			self.map_range[0] -= 1
-			self.calc_offset()
+			self.calc_offset(offset)
+		
+		#Point moving onto screen
+		if self.map_range[0] != 0:
+			if self.x_coord[self.map_range[0] - 1] + offset > 0:
+				self.map_range[0] -= 1
+				self.calc_offset(offset)
 		
 		# Right hand side
-		if self.x_coord[self.map_range[1] - 1] + self.location > self.screen_width:
-			self.map_range[1] += 1
-			self.calc_offset()
-		elif self.x_coord[self.map_range[1] + 1] + self.location < self.screen_width:
+		# Off
+		if self.x_coord[self.map_range[1]] + offset> self.screen_width:
 			self.map_range[1] -= 1
-			self.calc_offset()
+			self.calc_offset(offset)
+		# On
+		if self.map_range[1] != len(self.x_coord) - 1:
+			if self.x_coord[self.map_range[1] + 1] + offset < self.screen_width:
+				self.map_range[1] += 1
+				self.calc_offset(offset)
 	
+	# Draws the map as a set of dots connected by lines
 	def draw_map(self):
-		map_image = pygame.Surface((1336,768))
+		map_image = pygame.Surface((10000,600), pygame.SRCALPHA, 32)
 		for i in range(self.map_range[0], self.map_range[1]):
 			pygame.draw.circle(map_image, (255,255,255), (int(self.x_coord[i]), int(self.y_coord[i])), 5)
 			pygame.draw.line(map_image, (255,255,255), (self.x_coord[i], self.y_coord[i]), (self.x_coord[i+1], self.y_coord[i+1]))
 		return(map_image)
 	
-	def ground_collision(self, target):
-		
+	def ground_collision(self, target, offset):
+		# Double check offset for this object
+		self.calc_offset(offset[0])
 		# basic counter for the loops
 		i = -1
-		
+		offset[1] = 0 
 		# Location of the vector under the target in the above arrays
 		array_ID = 0
 
 		gradient = 0.0
 		vector_y = 0.0
-		dy = 0.0
+		dy = -1.0
 		
 		# Now to find the vector that the target is over
 		i = self.map_range[0]	
 		for i in range(self.map_range[0], self.map_range[1]):
-			if target.rect[0] >= self.x_coord[i]:
-				if target.rect[0] < self.x_coord[i+1]:
+			if target.rect[0] >= self.x_coord[i] + offset[0]:
+				if target.rect[0] < self.x_coord[i+1] + offset[0]:
 					array_ID = i
 
 		# Calculate the gradient of the vector (dy/dx)
@@ -102,13 +110,17 @@ class collision_map():
 		# Added this to stop the player moving past immovable walls
 		if gradient > -3 and gradient < 3:
 			# Use the gradient to calculate the height of the vector where the target is
-			vector_y = gradient * (target.rect[0]- self.x_coord[array_ID]) + self.y_coord[array_ID]	
+			vector_y = round(gradient * (target.rect[0]- self.x_coord[array_ID] - offset[0]) + self.y_coord[array_ID] + self.location[1] + offset[1])	
 			# And finally  calculate the displacement, if any is needed
-			if target.rect[1]> vector_y:
-				dy = target.rect[1]- vector_y
+			if target.rect[1] >= vector_y or (target.rect[1] > vector_y - 15 and target.jumping == False):
+				dy = target.rect[1] - vector_y
 			# This can be applied to the target to move them above the map
-			target.rect[1]-= dy
+			if dy != -1:
+				target.rect[1] -= dy
+				return True
+			else:
+				return False
 		else:
-			# nudges the player back if they're trying to walk through a wall
-			target.rect[0] = self.x_coord[array_ID] - (target.x_direction * target.speed)
-			self.ground_collision(target)
+			# Nudges the player back if they're trying to walk through a wall
+			target.rect[0] = self.x_coord[array_ID] + offset[0] - target.x_direction * target.speed
+			self.ground_collision(target, offset)

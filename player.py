@@ -17,6 +17,7 @@ class Player(pygame.sprite.Sprite):
 	
 		self.x_direction = 0
 		self.speed = 10
+		self.jumping = False
 		
 	def update(self):
 		self.keyboard_controls()
